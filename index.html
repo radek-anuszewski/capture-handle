@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Presenter support</title>
+    <style>
+        video {
+            width: 50%;
+        }
+    </style>
+    <script type="module">
+        const video = document.querySelector('#video');
+
+
+        const communicationChannel = new BroadcastChannel('presentationChannel');
+
+        const sendMessage = type => communicationChannel.postMessage(JSON.stringify({
+            id: handleId,
+            type,
+        }));
+
+        const handleId = 'presentation';
+
+        document.querySelector('#capture').addEventListener('click', async () => {
+            const stream = await navigator.mediaDevices.getDisplayMedia();
+            const track = stream.getVideoTracks()[0];
+            const streamHandle = track.getCaptureHandle();
+            if (streamHandle?.handle !== handleId) {
+                alert('It is not a tab with presentation!');
+                track.stop();
+                return;
+            }
+            video.srcObject = stream;
+            video.play();
+
+        })
+        document.querySelector('#begin')
+            .addEventListener('click', () => sendMessage('begin'));
+        document.querySelector('#previous')
+            .addEventListener('click', () => sendMessage('previous'));
+        document.querySelector('#next')
+            .addEventListener('click', () => sendMessage('next'));
+
+        communicationChannel.addEventListener('message', e => {
+            const data = JSON.parse(e.data);
+            if (data.id !== handleId) {
+                return;
+            }
+            document.querySelector('#support').innerHTML = `
+                <h3>Presenting ${data.src}</h3>
+                <h4>${data.text} <small>[${data.notes}]</small></h4>
+            `;
+        });
+    </script>
+</head>
+<body>
+<h1>Open <a href="presentation.html" target="_blank">presentation.html</a> and then click capture to share a tab with presentation</h1>
+<h2>You will see preview of the stream, which could be also stream by e.g. WebRTC</h2>
+<video id="video"></video>
+<div id="support">
+
+</div>
+<button id="capture">Capture</button>
+<button id="begin">Begin</button>
+<button id="previous">Previous</button>
+<button id="next">Next</button>
+</body>
+</html>

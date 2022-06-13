@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Presentation (share me)</title>
+    <style>
+        video {
+            width: 100%;
+        }
+    </style>
+    <script type="module">
+        // lista obiektow, odbijamy do zrodla opis
+        const videos = [
+            {
+                src: 'learn.mp4', // https://www.pexels.com/video/a-child-using-a-pencil-writing-on-a-paper-inside-a-classroom-3209663/
+                text: 'When I was young I liked to learn in school...',
+                notes: 'To tell about doing homework',
+            },
+            {
+                src: 'scientist.mp4', // https://www.pexels.com/video/scientist-looking-through-a-microscope-while-having-a-discussion-with-her-colleague-3196600/
+                text: 'Then I have become a scientist....',
+                notes: 'To highlight how important job it is',
+            },
+            {
+                src: 'money.mp4', // https://www.pexels.com/video/hands-rich-green-money-3943969/
+                text: 'And now I have a lot of money',
+                notes: 'To lie to them how much money I make :)',
+            },
+        ];
+        const video = document.querySelector('#video');
+
+        const isCurrentVideo = ({ src }) => video.src.includes(src);
+
+        const getPlayingVideoIndex = () => videos.findIndex(isCurrentVideo);
+
+        const playVideo = (index) => {
+            video.src = videos[index].src;
+            video.play();
+        };
+
+        const beginPresentation = () => playVideo(0);
+        const presentPrevious = () => {
+            const currentIndex = getPlayingVideoIndex();
+            const index = currentIndex !== 0 ? (currentIndex - 1) : (videos.length - 1);
+            playVideo(index);
+        };
+        const presentNext = () => {
+            const currentIndex = getPlayingVideoIndex();
+            const index = currentIndex < (videos.length - 1) ? (currentIndex + 1) : 0;
+            playVideo(index);
+        };
+
+        document.querySelector('#begin').addEventListener('click', beginPresentation);
+        document.querySelector('#previous').addEventListener('click', presentPrevious);
+        document.querySelector('#next').addEventListener('click', presentNext);
+
+        const handleId = 'presentation';
+
+        navigator.mediaDevices.setCaptureHandleConfig({
+            handle: handleId,
+            permittedOrigins: ['*'],
+        });
+
+        const communicationChannel = new BroadcastChannel('presentationChannel');
+        communicationChannel.addEventListener('message', (e) => {
+            const data = JSON.parse(e.data);
+            if (data.id !== handleId) {
+                return;
+            }
+            switch (data.type) {
+                case 'begin': {
+                    beginPresentation();
+                    break;
+                }
+                case 'previous': {
+                    presentPrevious();
+                    break;
+                }
+                case 'next': {
+                    presentNext();
+                    break;
+                }
+            }
+            const videoObj = videos.find(isCurrentVideo);
+            communicationChannel.postMessage(JSON.stringify({
+                id: handleId,
+                ...videoObj,
+            }));
+        })
+    </script>
+</head>
+<body>
+<video id="video" src="" muted></video>
+<button id="begin">Begin</button>
+<button id="previous">Previous</button>
+<button id="next">Next</button>
+</body>
+</html>
